@@ -486,7 +486,7 @@ function draw(){
 function applyGravity(a){
     if(rayscan(a.x,a.y + (a.sizeY / 2) + 1, 4.71, 2) == null){
         a.gravityTimer += delta/1000;
-        a.y += a.gravity * a.gravityTimer;
+        a.y += a.gravity * a.gravityTimer * delta/10;
         if(a.id == "player"){
             a.jump = true;
         }
@@ -540,16 +540,18 @@ function switchScene(a){
     }
 }
 var totalTime = 0;
+var oldY = 0;
+var dontStop;
 function scene1(a){
     if(a == "start"){
         //start function for scene1
         nullObjects.push(new GameObject("bg",800,450,1600,900));
         findObject("bg").image = background;
-        gameObjects.push(new GameObject("obj",719,228,431,30));
-        gameObjects.push(new GameObject("obj",105,700,211,28));
-        gameObjects.push(new GameObject("obj",550,576,423,33));
-        gameObjects.push(new GameObject("obj",1042,516,105,20));
-        gameObjects.push(new GameObject("obj",1493,406,212,18));
+        gameObjects.push(new GameObject("obja",719,228,431,30));
+        gameObjects.push(new GameObject("objb",105,700,211,28));
+        gameObjects.push(new GameObject("objc",550,576,423,33));
+        gameObjects.push(new GameObject("objd",1042,516,105,20));
+        gameObjects.push(new GameObject("obje",1493,406,212,18));
         nullObjects.push(new GameObject("spawn",704,85,100,100));
         //nullObjects.push(new GameObject("playerBG",704,85,100,130));
         gameObjects.push(new GameObject("player",704,85,100,130));
@@ -565,6 +567,7 @@ function scene1(a){
         //logic for scene 1
         totalTime += delta;
         var me = findObject("player");
+        var jumpUp = me.y < oldY;
         if(me.y > 950){
             me.x = 704;
             me.y = 85;
@@ -590,8 +593,29 @@ function scene1(a){
                 me.run = 0;
             }
         }
-        if(rayscan(me.x + (me.sizeX/2) + 1,me.y + (me.sizeY/2) - 10,0,3) != null || rayscan(me.x - (me.sizeX/2) - 1,me.y + (me.sizeY/2) - 10,3.14,3) != null){
-            me.run = 0;
+        var rightSideCheck = rayscan(me.x + (me.sizeX/2) + 1,me.y + (me.sizeY/2) - 10,1.57,130) != null;
+        var leftSideCheck = rayscan(me.x - (me.sizeX/2) - 1,me.y + (me.sizeY/2) - 10,1.57,130) != null;
+        if(rightSideCheck || leftSideCheck){
+            if(jumpUp){
+                if(rightSideCheck){
+                    dontStop = rayscan(me.x + (me.sizeX/2) + 1,me.y + (me.sizeY/2) - 10,1.57,130).id;
+                }
+                else{
+                    dontStop = rayscan(me.x - (me.sizeX/2) - 1,me.y + (me.sizeY/2) - 10,1.57,130).id;
+                }
+            }
+            else{
+                if(rightSideCheck){
+                    if(dontStop != rayscan(me.x + (me.sizeX/2) + 1,me.y + (me.sizeY/2) - 10,1.57,130).id){
+                        me.run = 0;
+                    }
+                }
+                else{
+                    if(dontStop != rayscan(me.x - (me.sizeX/2) - 1,me.y + (me.sizeY/2) - 10,1.57,130).id){
+                        me.run = 0;
+                    }
+                }
+            }
         }
         if(clickInput.space && ((rayscan(me.x - (me.sizeX/2),me.y + (me.sizeY/2) + 3,4.71,2) != null) || (rayscan(me.x + (me.sizeX/2),me.y + (me.sizeY/2) + 3,4.71,2) != null))){
             me.yForce = 16;
@@ -629,6 +653,7 @@ function scene1(a){
         if(totalTime > 400){
             totalTime = 0;
         }
+        oldY = me.y;
     }
 }
 function scene2(a){
