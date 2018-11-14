@@ -576,7 +576,19 @@ function scene1(a){
             me.run = 1;
         }
         else{
-            me.run = 0;
+            if(me.jump){
+                if(me.run != 0){
+                    if(me.run > 0){
+                        me.run -= delta/1000;
+                    }
+                    else if(me.run < 0){
+                        me.run += delta/1000;
+                    }
+                }
+            }
+            else{
+                me.run = 0;
+            }
         }
         if(rayscan(me.x + (me.sizeX/2) + 1,me.y + (me.sizeY/2) - 10,0,3) != null || rayscan(me.x - (me.sizeX/2) - 1,me.y + (me.sizeY/2) - 10,3.14,3) != null){
             me.run = 0;
