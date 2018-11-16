@@ -1,12 +1,4 @@
-/*
-goals:
-player 
-gameobjects -  position,size,type
-rayscanning
-canvas resizing and such
-gravity
-world positional differentiation
-*/
+
 //image refrences
 var background = new Image();
 background.src = "images/platformworld2PNG.png";
@@ -24,13 +16,18 @@ var playerRun1Left = new Image();
 playerRun1Left.src = "images/player_walk1Left.png";
 var playerRun2Left = new Image();
 playerRun2Left.src = "images/player_walk2Left.png";
-//---------------
+var fireBall = new Image();
+fireBall.src = "images/fireball.png";
+//--------
 var gameObjects = []; //gameobjects are seen by rayscans
 var nullObjects = []; //null objects are not seen by rayscans
+var ui = [];
 var buttons = []; //clickable buttons
 //gameObject
 //syntax:
 //new var newGO = GameObject(id,x,y,posX,posY,sizeX,sizeY);
+//font:
+var font = "Verdana";
 //gameObjects.push(newGO);
 class GameObject{
     constructor(a,b,c,d,e){
@@ -47,6 +44,11 @@ class GameObject{
         this.hovered = null;
         this.gravityTimer = 0;
         this.yForce = 0;
+        this.text = null;
+        this.textColor = "black";
+        this.textSize = 20;
+        this.textOffsetY = 0;
+        this.textOffsetX = 0;
     }
 }
 function findObject(id){
@@ -63,6 +65,11 @@ function findObject(id){
     for(var i = 0; i < buttons.length; i++){
         if(buttons[i].id == id){
             return buttons[i];
+        }
+    }
+    for(var i = 0; i < ui.length; i++){
+        if(ui[i].id == id){
+            return ui[i];
         }
     }
     return null;
@@ -289,10 +296,7 @@ fitAspectRatioFullscreen = true; //should the aspect ratio of the virtual canvas
 fitDiv = false; //if you want the canvas to be in a part of the page instead of the whole page
 /*recomended css settings for canvas
     padding:0;
-    margin-bottom:auto;
-    margin-top:auto;
-    margin-left:auto;
-    margin-right:auto;
+    margin: 0 auto;
     display:block;
 */
 var scaleX;
@@ -437,9 +441,6 @@ function draw(){
     }
     for(var i = 0; i < nullObjects.length; i++){
         var tempObject = nullObjects[i];
-        if(tempObject.gravity != null){
-            applyGravity(tempObject);
-        }
         if(tempObject.color != null){
             ctx.fillStyle = tempObject.color;
             ctx.fillRect((tempObject.x - tempObject.sizeX/2) * scaleX,(tempObject.y - tempObject.sizeY/2) * scaleY,tempObject.sizeX * scaleX,tempObject.sizeY * scaleY);
@@ -447,7 +448,12 @@ function draw(){
         else if(tempObject.image != null){
             ctx.drawImage(tempObject.image,(tempObject.x - tempObject.sizeX/2) * scaleX,(tempObject.y - tempObject.sizeY/2) * scaleY,tempObject.sizeX * scaleX,tempObject.sizeY * scaleY);
         }
-        
+        if(tempObject.text != null){
+            ctx.textAlign = "center";
+            ctx.fillStyle = tempObject.textColor;
+            ctx.font = (tempObject.textSize * ((scaleX + scaleY)/2)) + "px " + font;
+            ctx.fillText(tempObject.text,(tempObject.x + tempObject.textOffsetX) * scaleX,(tempObject.y + tempObject.textOffsetY) * scaleY);
+        }
     }
     for(var i = 0; i < gameObjects.length; i++){
         var tempObject = gameObjects[i];
@@ -471,6 +477,12 @@ function draw(){
             ctx.rotate(-tempObject.rotation);
             ctx.translate(-tempObject.x * scaleX,-tempObject.y * scaleY);
         }
+        if(tempObject.text != null){
+            ctx.textAlign = "center";
+            ctx.fillStyle = tempObject.textColor;
+            ctx.font = (tempObject.textSize * ((scaleX + scaleY)/2)) + "px " + font;
+            ctx.fillText(tempObject.text,(tempObject.x + tempObject.textOffsetX) * scaleX,(tempObject.y + tempObject.textOffsetY) * scaleY);
+        }
     }
     for(var i = 0; i < buttons.length; i++){
         var tempObject = buttons[i];
@@ -480,6 +492,28 @@ function draw(){
         }
         else if(tempObject.image != null){
             ctx.drawImage(tempObject.image,(tempObject.x - tempObject.sizeX/2) * scaleX,(tempObject.y - tempObject.sizeY/2) * scaleY,tempObject.sizeX * scaleX,tempObject.sizeY * scaleY);
+        }
+        if(tempObject.text != null){
+            ctx.textAlign = "center";
+            ctx.fillStyle = tempObject.textColor;
+            ctx.font = (tempObject.textSize * ((scaleX + scaleY)/2)) + "px " + font;
+            ctx.fillText(tempObject.text,(tempObject.x + tempObject.textOffsetX) * scaleX,(tempObject.y + tempObject.textOffsetY) * scaleY);
+        }
+    }
+    for(var i = 0; i < ui.length; i++){
+        var tempObject = ui[i];
+        if(tempObject.color != null){
+            ctx.fillStyle = tempObject.color;
+            ctx.fillRect((tempObject.x - tempObject.sizeX/2) * scaleX,(tempObject.y - tempObject.sizeY/2) * scaleY,tempObject.sizeX * scaleX,tempObject.sizeY * scaleY);
+        }
+        else if(tempObject.image != null){
+            ctx.drawImage(tempObject.image,(tempObject.x - tempObject.sizeX/2) * scaleX,(tempObject.y - tempObject.sizeY/2) * scaleY,tempObject.sizeX * scaleX,tempObject.sizeY * scaleY);
+        }
+        if(tempObject.text != null){
+            ctx.textAlign = "center";
+            ctx.fillStyle = tempObject.textColor;
+            ctx.font = (tempObject.textSize * ((scaleX + scaleY)/2)) + "px " + font;
+            ctx.fillText(tempObject.text,(tempObject.x + tempObject.textOffsetX) * scaleX,(tempObject.y + tempObject.textOffsetY) * scaleY);
         }
     }
 }
@@ -555,6 +589,9 @@ function scene1(a){
         nullObjects.push(new GameObject("spawn",704,85,100,100));
         //nullObjects.push(new GameObject("playerBG",704,85,100,130));
         gameObjects.push(new GameObject("player",704,85,100,130));
+        nullObjects.push(new GameObject("name",0,0,0,0));
+        findObject("name").text = "";
+        findObject("name").textOffsetY = -60;
         //findObject("playerBG").color = "red";
         findObject("player").image = playerIdle;
         findObject("player").gravity = 9.8;
@@ -567,6 +604,9 @@ function scene1(a){
         //logic for scene 1
         totalTime += delta;
         var me = findObject("player");
+        if(!me.jump){
+            dontStop = "";
+        }
         var jumpUp = me.y < oldY;
         if(me.y > 950){
             me.x = 704;
@@ -593,29 +633,34 @@ function scene1(a){
                 me.run = 0;
             }
         }
-        var rightSideCheck = rayscan(me.x + (me.sizeX/2) + 1,me.y + (me.sizeY/2) - 10,1.57,130) != null;
-        var leftSideCheck = rayscan(me.x - (me.sizeX/2) - 1,me.y + (me.sizeY/2) - 10,1.57,130) != null;
-        if(rightSideCheck || leftSideCheck){
+        var rightSideCheck = rayscan(me.x + (me.sizeX/2) + 1,me.y + (me.sizeY/2) - 15,1.57,115);
+        var leftSideCheck = rayscan(me.x - (me.sizeX/2) - 1,me.y + (me.sizeY/2) - 15,1.57,115);
+        var rightSideCheckB = rightSideCheck != null;
+        var leftSideCheckB = leftSideCheck != null;
+        if(rightSideCheckB || leftSideCheckB){
             if(jumpUp){
-                if(rightSideCheck){
-                    dontStop = rayscan(me.x + (me.sizeX/2) + 1,me.y + (me.sizeY/2) - 10,1.57,130).id;
+                if(rightSideCheckB){
+                    dontStop = rightSideCheck.id;
                 }
                 else{
-                    dontStop = rayscan(me.x - (me.sizeX/2) - 1,me.y + (me.sizeY/2) - 10,1.57,130).id;
+                    dontStop = leftSideCheck.id;
                 }
             }
             else{
-                if(rightSideCheck){
-                    if(dontStop != rayscan(me.x + (me.sizeX/2) + 1,me.y + (me.sizeY/2) - 10,1.57,130).id){
+                if(rightSideCheckB){
+                    if(dontStop != rightSideCheck.id){
                         me.run = 0;
                     }
                 }
                 else{
-                    if(dontStop != rayscan(me.x - (me.sizeX/2) - 1,me.y + (me.sizeY/2) - 10,1.57,130).id){
-                        me.run = 0;
+                    if(dontStop != leftSideCheck.id){
+                        me.run = 0;//w
                     }
                 }
             }
+        }
+        if(rightSideCheckB && leftSideCheckB && !me.jump){
+            me.y =  (rightSideCheck.y - (rightSideCheck.sizeY/2)) - (me.sizeY/2);
         }
         if(clickInput.space && ((rayscan(me.x - (me.sizeX/2),me.y + (me.sizeY/2) + 3,4.71,2) != null) || (rayscan(me.x + (me.sizeX/2),me.y + (me.sizeY/2) + 3,4.71,2) != null))){
             me.yForce = 16;
@@ -654,6 +699,53 @@ function scene1(a){
             totalTime = 0;
         }
         oldY = me.y;
+        findObject("name").x = me.x;
+        findObject("name").y = me.y;
+        if(!me.jump){
+            objN = rayscan(me.x,me.y + (me.sizeY/2) + 1,4.71,2);
+            if(objN != null){
+                me.y = objN.y - (objN.sizeY/2) - (me.sizeY/2);
+            }
+        }
+        if(clickInput.mouse1){
+            clickX = mousePos.x;
+            clickY = mousePos.y;
+            var from = me.x + (me.sizeX/2) + 11;
+            if((clickX - me.x) < 0){
+                from = me.x - (me.sizeX/2) - 11;
+            }
+            var ang = Math.atan((clickY - me.y)/(clickX - from));
+            var rnd = Math.random().toString();
+            gameObjects.push(new GameObject("fireB" + rnd,from,me.y,20,20));
+            if((clickX - from) > 0){
+                findObject("fireB" + rnd).velX = Math.cos(ang);
+            }
+            else{
+                findObject("fireB" + rnd).velX = -Math.cos(ang);
+            }
+            if((clickX - from) > 0){
+                findObject("fireB" + rnd).velY = Math.sin(ang);
+            }
+            else{
+                findObject("fireB" + rnd).velY = -Math.sin(ang);
+            }
+            findObject("fireB" + rnd).image = fireBall;
+            findObject("fireB" + rnd).rotation = 0;
+        }
+        for(var i = 0; i < gameObjects.length; i++){
+            var isFb = gameObjects[i];
+            if(isFb.id.substring(0,2) == "fi"){
+                isFb.x += isFb.velX * delta/3;
+                isFb.y += isFb.velY * delta/3;
+                isFb.rotation += delta/60;
+                if(isFb.x < 0 || isFb.x > 1600){
+                    gameObjects.splice(i,1);
+                }
+                else if(isFb.y < 0 || isFb.y > 900){
+                    gameObjects.splice(i,1);
+                }
+            }
+        }
     }
 }
 function scene2(a){
