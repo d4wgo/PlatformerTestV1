@@ -49,6 +49,9 @@ class GameObject{
         this.textSize = 20;
         this.textOffsetY = 0;
         this.textOffsetX = 0;
+        this.parent = null;
+        this.changeX = 0;
+        this.changeY = 0;
     }
 }
 function findObject(id){
@@ -345,6 +348,7 @@ function getCursorPosition(canvas, event) {
     mousePos.x = x/scaleX;
     mousePos.y = y/scaleY;
 }
+
 //game type:
 //overview - the player is in the middle of the screen, and moves around the world
 //non-follow overview, the player is in a world where the camera doesnt follow them, the whole game world is just the window
@@ -371,6 +375,28 @@ var delta;
 function runGame(){
     delta = Date.now() - prevTime;
     prevTime = Date.now();
+    var parents = [];
+    for(var i = 0; i < gameObjects.length; i++){
+        var a = gameObjects[i];
+        if(a.parent != null){
+            if(!parents.includes(a.parent)){
+                parents.push(a.parent);
+            }
+        }
+    }
+    for(var i = 0; i < nullObjects.length; i++){
+        var a = nullObjects[i];
+        if(a.parent != null){
+            if(!parents.includes(a.parent)){
+                parents.push(a.parent);
+            }
+        }
+    }
+    for(var i = 0; i < parents.length; i++){
+        var a = parents[i];
+        a.ogy = a.y;
+        a.ogx = a.x;
+    }
     for(var i = 0; i < buttons.length; i++){
         var button = buttons[i];
         if(mousePos.x <= (button.x + button.sizeX/2) && mousePos.x >= (button.x - button.sizeX/2) && mousePos.y >= (button.y - button.sizeY/2) && mousePos.y <= (button.y + button.sizeY/2)){
@@ -425,6 +451,25 @@ function runGame(){
         clickInput[key] = false;     
     });
     draw();
+    for(var i = 0; i < parents.length; i++){
+        var a = parents[i];
+        a.changeX = a.x - a.ogx;
+        a.changeY = a.y - a.ogy;
+    }
+    for(var i = 0; i < gameObjects.length; i++){
+        var a = gameObjects[i];
+        if(a.parent != null){
+            a.x += a.parent.changeX;
+            a.y += a.parent.changeY;
+        }
+    }
+    for(var i = 0; i < nullObjects.length; i++){
+        var a = nullObjects[i];
+        if(a.parent != null){
+            a.x += a.parent.changeX;
+            a.y += a.parent.changeY;
+        }
+    }
     window.requestAnimationFrame(runGame);
 }
 window.requestAnimationFrame(runGame);
@@ -574,6 +619,7 @@ function switchScene(a){
     }
 }
 var totalTime = 0;
+var totalTime1 = 0;
 var oldY = 0;
 var dontStop;
 function scene1(a){
@@ -589,12 +635,15 @@ function scene1(a){
         nullObjects.push(new GameObject("spawn",704,85,100,100));
         //nullObjects.push(new GameObject("playerBG",704,85,100,130));
         gameObjects.push(new GameObject("player",704,85,100,130));
+        //gameObjects.push(new GameObject("exd",500,85,100,130));
         nullObjects.push(new GameObject("name",0,0,0,0));
         findObject("name").text = "";
         findObject("name").textOffsetY = -60;
         //findObject("playerBG").color = "red";
         findObject("player").image = playerIdle;
         findObject("player").gravity = 9.8;
+        //findObject("exd").color = "red";
+        //findObject("exd").parent = findObject("player");
         //findObject("playerBG").gravity = 9.8;
         findObject("player").run = 0;
         findObject("player").jumpUp = false;
@@ -705,6 +754,10 @@ function scene1(a){
             objN = rayscan(me.x,me.y + (me.sizeY/2) + 1,4.71,2);
             if(objN != null){
                 me.y = objN.y - (objN.sizeY/2) - (me.sizeY/2);
+                me.parent = objN;
+            }
+            else{
+                me.parent = null;
             }
         }
         if(clickInput.mouse1){
