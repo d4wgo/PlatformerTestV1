@@ -456,6 +456,30 @@ function runGame(){
         a.changeX = a.x - a.ogx;
         a.changeY = a.y - a.ogy;
     }
+    for(var i = 0; i < parents.length; i++){
+        var a = parents[i];
+        a.ogy = a.y;
+        a.ogx = a.x;
+    }
+    for(var i = 0; i < gameObjects.length; i++){
+        var a = gameObjects[i];
+        if(a.parent != null){
+            a.x += a.parent.changeX;
+            a.y += a.parent.changeY;
+        }
+    }
+    for(var i = 0; i < nullObjects.length; i++){
+        var a = nullObjects[i];
+        if(a.parent != null){
+            a.x += a.parent.changeX;
+            a.y += a.parent.changeY;
+        }
+    }
+    for(var i = 0; i < parents.length; i++){
+        var a = parents[i];
+        a.changeX = a.x - a.ogx;
+        a.changeY = a.y - a.ogy;
+    }
     for(var i = 0; i < gameObjects.length; i++){
         var a = gameObjects[i];
         if(a.parent != null){
@@ -566,13 +590,13 @@ function applyGravity(a){
     if(rayscan(a.x,a.y + (a.sizeY / 2) + 1, 4.71, 2) == null){
         a.gravityTimer += delta/1000;
         a.y += a.gravity * a.gravityTimer * delta/10;
-        if(a.id == "player"){
+        if(a.id == "pBody"){
             a.jump = true;
         }
     }
     else{
         a.gravityTimer = 0;
-        if(a.id == "player"){
+        if(a.id == "pBody"){
             a.jump = false;
         }
     }
@@ -634,14 +658,20 @@ function scene1(a){
         gameObjects.push(new GameObject("obje",1493,406,212,18));
         nullObjects.push(new GameObject("spawn",704,85,100,100));
         //nullObjects.push(new GameObject("playerBG",704,85,100,130));
-        gameObjects.push(new GameObject("player",704,85,100,130));
+        nullObjects.push(new GameObject("player",704,85,100,130));
+        gameObjects.push(new GameObject("pHead",702,75,55,44));
+        gameObjects.push(new GameObject("pBody",704,122,74,55));
         //gameObjects.push(new GameObject("exd",500,85,100,130));
         nullObjects.push(new GameObject("name",0,0,0,0));
         findObject("name").text = "";
         findObject("name").textOffsetY = -60;
         //findObject("playerBG").color = "red";
         findObject("player").image = playerIdle;
-        findObject("player").gravity = 9.8;
+        findObject("pBody").gravity = 9.8;
+        findObject("player").parent = findObject("pBody");
+        //findObject("pHead").color = "red";
+        //findObject("pBody").color = "red";
+        findObject("pHead").parent = findObject("pBody");
         //findObject("exd").color = "red";
         //findObject("exd").parent = findObject("player");
         //findObject("playerBG").gravity = 9.8;
@@ -652,7 +682,8 @@ function scene1(a){
     else{
         //logic for scene 1
         totalTime += delta;
-        var me = findObject("player");
+        var me = findObject("pBody");
+        var meImg = findObject("player");
         if(!me.jump){
             dontStop = "";
         }
@@ -682,8 +713,8 @@ function scene1(a){
                 me.run = 0;
             }
         }
-        var rightSideCheck = rayscan(me.x + (me.sizeX/2) + 1,me.y + (me.sizeY/2) - 15,1.57,115);
-        var leftSideCheck = rayscan(me.x - (me.sizeX/2) - 1,me.y + (me.sizeY/2) - 15,1.57,115);
+        var rightSideCheck = rayscan(me.x + (me.sizeX/2) + 1,me.y + (me.sizeY/2) - 15,1.57,me.sizeY - 15);
+        var leftSideCheck = rayscan(me.x - (me.sizeX/2) - 1,me.y + (me.sizeY/2) - 15,1.57, me.sizeY - 15);
         var rightSideCheckB = rightSideCheck != null;
         var leftSideCheckB = leftSideCheck != null;
         if(rightSideCheckB || leftSideCheckB){
@@ -716,32 +747,32 @@ function scene1(a){
         }
         if(me.jump){
             if(me.run < 0){
-                me.image = playerJumpLeft;
+                meImg.image = playerJumpLeft;
             }
             else{
-                me.image = playerJumpRight;
+                meImg.image = playerJumpRight;
             }
         }
         else if(me.run != 0){
             if(me.run < 0){
                 if(totalTime < 200){
-                    me.image = playerRun1Left;
+                    meImg.image = playerRun1Left;
                 }
                 else{
-                    me.image = playerRun2Left;
+                    meImg.image = playerRun2Left;
                 }
             }
             else{
                 if(totalTime < 200){
-                    me.image = playerRun1Right;
+                    meImg.image = playerRun1Right;
                 }
                 else{
-                    me.image = playerRun2Right;
+                    meImg.image = playerRun2Right;
                 }
             }
         }
         else{
-            me.image = playerIdle;
+            meImg.image = playerIdle;
         }
         me.x += me.run * delta / 2;
         if(totalTime > 400){
