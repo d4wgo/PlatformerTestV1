@@ -52,6 +52,7 @@ class GameObject{
         this.parent = null;
         this.changeX = 0;
         this.changeY = 0;
+        this.rotateBox = null;
     }
 }
 function findObject(id){
@@ -77,6 +78,42 @@ function findObject(id){
     }
     return null;
 }
+function deleteObject(id){
+    var found = false;
+    for(var i = 0; i < gameObjects.length; i++){
+        if(gameObjects[i].id == id){
+            gameObjects.splice(i,1);
+            found = true;
+            break;
+        }
+    }
+    if(!found){
+        for(var i = 0; i < nullObjects.length; i++){
+            if(nullObjects[i].id == id){
+                nullObjects.splice(i,1);
+                found = true;
+                break;
+            }
+        }
+        if(!found){
+            for(var i = 0; i < buttons.length; i++){
+                if(buttons[i].id == id){
+                    buttons.splice(i,1);
+                    found = true;
+                    break;
+                }
+            }
+            if(!found){
+                for(var i = 0; i < ui.length; i++){
+                    if(ui[i].id == id){
+                        ui.splice(i,1);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
 //rayscan
 //syntax:
 //rayscan(starting x, starting y, angle, distance)
@@ -89,7 +126,7 @@ function rayscan(a,b,c,d){
             var objCheck = gameObjects[j];
             if(checkX >= (objCheck.x - objCheck.sizeX/2) && checkX <= (objCheck.x + objCheck.sizeX/2) && checkY <= (objCheck.y + objCheck.sizeY/2) && checkY >= (objCheck.y - objCheck.sizeY/2)){
                 return objCheck;
-            }
+            }       
         }
         checkX += Math.cos(ang);
         checkY -= Math.sin(ang);
@@ -348,7 +385,69 @@ function getCursorPosition(canvas, event) {
     mousePos.x = x/scaleX;
     mousePos.y = y/scaleY;
 }
-
+function pythagTheorem(a,b){
+    return Math.sqrt(Math.pow(a,2) + Math.pow(b,2));
+}
+var deleteFixes = [];
+function fixRotatingObjects(){
+    var resolution = 8;
+    for(var i = 0; i < deleteFixes.length; i++){
+        deleteObject(deleteFixes[i]);
+    }
+    deleteFixes = [];
+    for(var i = 0; i < gameObjects.length; i++){
+        var n1 = gameObjects[i];
+        if(n1.rotation != null){
+            var manyX = n1.sizeX / resolution;
+            var manyY = n1.sizeY / resolution;
+            for(var j = 0; j < manyY; j++){
+                for(var o = 0; o < manyX; o++){
+                    var rndA = Math.random().toString().substring(2,7);
+                    var farX = (o * resolution) - (n1.sizeX/2) + (resolution/2);
+                    var farY = (j * resolution) - (n1.sizeY/2) + (resolution/2);
+                    var radius = pythagTheorem(farX,farY);
+                    var initRot = Math.atan(farY / farX);
+                    deleteFixes.push(rndA);
+                    if(o > manyX/2){
+                        gameObjects.push(new GameObject(rndA,(Math.cos(n1.rotation + initRot) * radius) + n1.x,(Math.sin(n1.rotation + initRot) * radius) + n1.y,resolution,resolution));
+                        findObject(rndA).color = "red";
+                    }
+                    else if(o < manyX/2){
+                        gameObjects.push(new GameObject(rndA,-(Math.cos(n1.rotation + initRot) * radius) + n1.x,-(Math.sin(n1.rotation + initRot) * radius) + n1.y,resolution,resolution));
+                        findObject(rndA).color = "red";
+                    }
+                }
+            }
+        }
+    }
+    for(var i = 0; i < nullObjects.length; i++){
+        var n1 = nullObjects[i];
+        if(n1.rotateBox == true){
+            if(n1.rotation != null){
+                var manyX = n1.sizeX / resolution;
+                var manyY = n1.sizeY / resolution;
+                for(var j = 0; j < manyY; j++){
+                    for(var o = 0; o < manyX; o++){
+                        var rndA = Math.random().toString().substring(2,7);
+                        var farX = (o * resolution) - (n1.sizeX/2) + (resolution/2);
+                        var farY = (j * resolution) - (n1.sizeY/2) + (resolution/2);
+                        var radius = pythagTheorem(farX,farY);
+                        var initRot = Math.atan(farY / farX);
+                        deleteFixes.push(rndA);
+                        if(o > manyX/2){
+                            gameObjects.push(new GameObject(rndA,(Math.cos(n1.rotation + initRot) * radius) + n1.x,(Math.sin(n1.rotation + initRot) * radius) + n1.y,resolution,resolution));
+                            findObject(rndA).color = "red";
+                        }
+                        else if(o < manyX/2){
+                            gameObjects.push(new GameObject(rndA,-(Math.cos(n1.rotation + initRot) * radius) + n1.x,-(Math.sin(n1.rotation + initRot) * radius) + n1.y,resolution,resolution));
+                            findObject(rndA).color = "red";
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 //game type:
 //overview - the player is in the middle of the screen, and moves around the world
 //non-follow overview, the player is in a world where the camera doesnt follow them, the whole game world is just the window
@@ -360,10 +459,6 @@ var fov = { //fov is only used for overview follow games
     x: 400,
     y: 200
 }
-var presetWorldImage = false; //can be set to true or false
-var worldImage = new Image();
-worldImage.src = "http://logicsimplified.com/newgames/wp-content/uploads/2017/09/shovelknight.jpg"; //world background image replace with your own
-//the start function -  where every game object is made before the game starts
 var scene = 1;
 function start(){
     scene = 1;
@@ -374,6 +469,9 @@ var prevTime = Date.now();
 var delta;
 function runGame(){
     delta = Date.now() - prevTime;
+    if(input.two){
+        delta/=10;
+    }
     prevTime = Date.now();
     var parents = [];
     for(var i = 0; i < gameObjects.length; i++){
@@ -447,6 +545,7 @@ function runGame(){
             scene9(null);
             break;
     }
+    fixRotatingObjects();
     Object.keys(clickInput).forEach(function(key) {
         clickInput[key] = false;     
     });
@@ -497,19 +596,23 @@ function runGame(){
     window.requestAnimationFrame(runGame);
 }
 window.requestAnimationFrame(runGame);
-
+var totalTranslateX = 0;
+var totalTranslateY = 0;
 function draw(){
+    ctx.setTransform(1,0,0,1,0,0);
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    if(presetWorldImage){
-        if(!overview){
-            ctx.drawImage(worldImage,0,0,canvas.width,canvas.height);
-        }
-        else{
-            ctx.drawImage(worldImage,me.x - fov.x/2,me.y - fov.y/2,fov.x,fov.y,0,0,canvas.width,canvas.height);
-        }
-    }
+    //totalTranslateX = 0;
+    //ctx.translate(totalTranslateX + 704,0);
     for(var i = 0; i < nullObjects.length; i++){
         var tempObject = nullObjects[i];
+        if(tempObject.gravity != null){
+            applyGravity(tempObject);
+        }
+        if(tempObject.rotation != null){
+            ctx.translate(tempObject.x * scaleX,tempObject.y * scaleY);
+            ctx.rotate(tempObject.rotation);
+            ctx.translate(-tempObject.x * scaleX,-tempObject.y * scaleY);
+        }
         if(tempObject.color != null){
             ctx.fillStyle = tempObject.color;
             ctx.fillRect((tempObject.x - tempObject.sizeX/2) * scaleX,(tempObject.y - tempObject.sizeY/2) * scaleY,tempObject.sizeX * scaleX,tempObject.sizeY * scaleY);
@@ -522,6 +625,11 @@ function draw(){
             ctx.fillStyle = tempObject.textColor;
             ctx.font = (tempObject.textSize * ((scaleX + scaleY)/2)) + "px " + font;
             ctx.fillText(tempObject.text,(tempObject.x + tempObject.textOffsetX) * scaleX,(tempObject.y + tempObject.textOffsetY) * scaleY);
+        }
+        if(tempObject.rotation != null){
+            ctx.translate(tempObject.x * scaleX,tempObject.y * scaleY);
+            ctx.rotate(-tempObject.rotation);
+            ctx.translate(-tempObject.x * scaleX,-tempObject.y * scaleY);
         }
     }
     for(var i = 0; i < gameObjects.length; i++){
@@ -587,7 +695,7 @@ function draw(){
     }
 }
 function applyGravity(a){
-    if(rayscan(a.x,a.y + (a.sizeY / 2) + 1, 4.71, 2) == null){
+    if(rayscan(a.x - (a.sizeX / 2),a.y + (a.sizeY / 2) + 1, 4.71, 2) == null && rayscan(a.x + (a.sizeX / 2),a.y + (a.sizeY / 2) + 1, 4.71, 2) == null){
         a.gravityTimer += delta/1000;
         a.y += a.gravity * a.gravityTimer * delta/10;
         if(a.id == "pBody"){
@@ -611,6 +719,8 @@ function applyGravity(a){
 function switchScene(a){
     gameObjects = [];
     nullObjects = [];
+    ui = [];
+    buttons = [];
     scene = a;
     switch(a){
         case 1:
@@ -662,9 +772,12 @@ function scene1(a){
         gameObjects.push(new GameObject("pHead",702,75,55,44));
         gameObjects.push(new GameObject("pBody",704,122,74,55));
         //gameObjects.push(new GameObject("exd",500,85,100,130));
+        nullObjects.push(new GameObject("platform",300,400,200,30));
         nullObjects.push(new GameObject("name",0,0,0,0));
         findObject("name").text = "";
         findObject("name").textOffsetY = -60;
+        findObject("platform").color = "black";
+        findObject("platform").rotateBox = true;
         //findObject("playerBG").color = "red";
         findObject("player").image = playerIdle;
         findObject("pBody").gravity = 9.8;
@@ -682,8 +795,19 @@ function scene1(a){
     else{
         //logic for scene 1
         totalTime += delta;
+        totalTime1 += delta;
         var me = findObject("pBody");
         var meImg = findObject("player");
+        findObject("platform").rotation += 0.0000 * delta;
+        if(totalTime1 < 2000){
+            findObject("platform").x += delta/10;
+        }
+        else{
+            findObject("platform").x -= delta/10;
+        }
+        if(totalTime1 > 4000){
+            totalTime1 = 0;
+        }
         if(!me.jump){
             dontStop = "";
         }
@@ -782,7 +906,15 @@ function scene1(a){
         findObject("name").x = me.x;
         findObject("name").y = me.y;
         if(!me.jump){
-            objN = rayscan(me.x,me.y + (me.sizeY/2) + 1,4.71,2);
+            var right = rayscan(me.x + (me.sizeX / 2),me.y + (me.sizeY/2) + 1,4.71,2);
+            var left = rayscan(me.x - (me.sizeX / 2),me.y + (me.sizeY/2) + 1,4.71,2);
+            var objN;
+            if(right){
+                objN = right;
+            }
+            else{
+                objN = left;
+            }
             if(objN != null){
                 me.y = objN.y - (objN.sizeY/2) - (me.sizeY/2);
                 me.parent = objN;
